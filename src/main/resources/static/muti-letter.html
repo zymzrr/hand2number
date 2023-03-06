@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>轨迹识别 - 多字母识别</title>
+    <!--<link rel="stylesheet" href="/css/common.css">-->
+</head>
+<body>
+<h1 style="color: #186dc5;">轨迹识别 - 多字母识别</h1>
+
+<div class="result">
+    <div class="big">
+        <x />
+    </div>
+    <span class="time"></span>
+</div>
+
+
+
+
+<div class="main">
+
+    <canvas id="canvas" width="900" height="400"></canvas>
+    <div class="right">
+        <div class="points">
+
+        </div>
+        <div class="btns">
+            <button onclick="clearCanvas()">清空</button>
+            <button onclick="sb();">识别</button>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="/js/jquery.min.js"></script>
+<script type="text/javascript">
+
+    let width = $(window).width();
+    $(".right").css("width",width-900-30+"px");
+
+
+    var url = "/api/trace/mutiletter.json"
+
+    var points = [];
+    var c = document.getElementById('canvas');
+    var ctx = c.getContext('2d');
+
+    //画一个黑色矩形
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, 900, 400);
+
+    //按下标记
+    var onoff = false;
+    var oldx = -10;
+    var oldy = -10;
+
+    //设置颜色
+    var linecolor = 'black';
+
+    //设置线宽
+    var linw = 6;
+
+    //添加鼠标移动事件
+    canvas.addEventListener('mousemove', draw, true);
+    //添加鼠标按下事件
+    canvas.addEventListener('mousedown', down, false);
+    //添加鼠标弹起事件
+    canvas.addEventListener('mouseup', up, false);
+
+    function down(event) {
+        console.log(event);
+        onoff = true;
+        oldx = event.offsetX;
+        oldy = event.offsetY;
+        var point = {
+            x: oldx,
+            y: oldy,
+            action: 'down'
+        }
+        points.push(point);
+        print();
+    }
+
+    function up(event) {
+        onoff = false;
+
+        var newx = event.offsetX;
+        var newy = event.offsetY;
+        var point = {
+            x: oldx,
+            y: oldy,
+            action: 'up'
+        }
+        points.push(point);
+        print();
+        sb();
+    }
+
+    function draw(event) {
+        if (onoff == true) {
+            var newx = event.offsetX;
+            var newy = event.offsetY;
+            ctx.beginPath();
+            ctx.moveTo(oldx, oldy);
+            ctx.lineTo(newx, newy);
+            ctx.strokeStyle = linecolor;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            oldx = newx;
+            oldy = newy;
+
+            var point = {
+                x: oldx,
+                y: oldy,
+                action: 'move'
+            }
+            points.push(point);
+            print();
+        }
+    }
+
+
+    function clearCanvas() {
+        ctx.clearRect(0, 0, c.width, c.height);
+        $(".big").html("<x />");
+        points = [];
+        print();
+    }
+
+    function print() {
+        var html = '';
+        html = JSON.stringify(points);
+        // for (var point of points) {
+        //     html += point.action + ',' + point.x + ',' + point.y + '<br>'
+        // }
+        $(".points").html(html);
+
+
+        var h4 = $('.points').prop("scrollHeight"); //等同 $('.out-box')[0].scrollHeight
+        $('.points').scrollTop(h4);
+
+    }
+
+    function sb() {
+
+        $.ajax({
+            url: url,
+            method: "POST",
+            dataType: "json",
+            contentType: "application/json",
+            data: JSON.stringify(points),
+        })
+            .then(data => {
+                $(".big").html(data.data.letter+'<x />')
+                $(".time").text('耗时：'+data.data.time + 'ms')
+            })
+
+
+    }
+</script>
+</body>
+</html>
+<style>
+    .main {
+        position: relative;
+    }
+
+    canvas {
+        border: 1px solid #efefef;
+        box-shadow: 0 0 10px 3px #eee;
+    }
+
+    .result{
+        height:72px;
+        border-bottom:1px solid #efefef;
+        margin-bottom: 20px;
+        position: relative;
+        width:100%;
+    }
+    .result .time{
+        font-size: 12px;
+        position: absolute;
+        bottom:0;
+        right:0;
+        height:24px;
+        line-height: 24px;
+        padding-left:10px;
+        padding-right: 10px;
+        background-color: #efefef;
+    }
+    .right {
+        position: absolute;
+        width: 400px;
+        height: 300px;
+        top:0;
+        right:0;
+    }
+
+    .right .points {
+        height: 300px;
+        overflow: auto;
+        font-size: 12px;
+        border: 1px solid #efefef;
+    }
+
+    .right .btns {
+        margin-top: 10px;
+    }
+
+    .big {
+        font-size: 54px;
+        word-break: break-all;
+    }
+
+    x{
+        width: 20px;
+        height: 30px;
+        margin: 0 auto;
+        border-left: 2px solid #333;
+        animation: cursorImg 1s infinite steps(1, start);
+    }
+    @keyframes cursorImg {
+        0%,
+        100% {
+            opacity: 0;
+        }
+        50% {
+            opacity: 1;
+        }
+    }
+</style>

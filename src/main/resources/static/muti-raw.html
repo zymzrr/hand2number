@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title></title>
+    </head>
+    <body>
+        <h1>轨迹识别 - 多数字识别</h1>
+        <div class="main">
+            <canvas id="canvas" width="600" height="400"></canvas>
+            <div class="right">
+                <div class="points">
+                
+                </div>
+                <div class="btns">
+                    <button onclick="clearCanvas()">清空</button>
+                    <button onclick="sb();">识别</button>
+                </div>
+                <div class="btns">
+                    识别结果:
+                    <div class="big"></div>
+                    耗时：
+                    <span class="time"></span>
+                </div>
+            </div>
+            
+        </div>
+
+        <script src="/js/jquery.min.js"></script>
+        <script src="/js/raw.js"></script>
+        <script type="text/javascript">
+            var url ="/api/trace/mutiraw.json"
+            
+            var points = [];
+            var c = document.getElementById('canvas');
+            var ctx = c.getContext('2d');
+
+            //画一个黑色矩形
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0,0,600,400);
+
+            //按下标记
+            var onoff = false;
+            var oldx = -10;
+            var oldy = -10;
+
+            //设置颜色
+            var linecolor = 'black';
+
+            //设置线宽
+            var linw = 6;
+
+            //添加鼠标移动事件
+            canvas.addEventListener('mousemove',draw,true);
+            //添加鼠标按下事件
+            canvas.addEventListener('mousedown',down,false);
+            //添加鼠标弹起事件
+            canvas.addEventListener('mouseup',up,false);
+
+            function down(event) {
+                console.log(event);
+                onoff = true;
+                oldx = event.offsetX;
+                oldy = event.offsetY;
+                var point = {
+                    x : oldx,
+                    y : oldy,
+                    action : 'ACTION_DOWN'
+                }
+                points.push(point);
+                print();
+            }
+
+            function up(event) {
+                onoff = false;
+                
+                var newx = event.offsetX;
+                var newy = event.offsetY;
+                var point = {
+                    x : oldx,
+                    y : oldy,
+                    action : 'ACTION_UP'
+                }
+                points.push(point);
+                print();
+                sb();
+            }
+
+            function draw(event) {
+                if(onoff == true) {
+                    var newx = event.offsetX;
+                    var newy = event.offsetY;
+                    ctx.beginPath();
+                    ctx.moveTo(oldx,oldy);
+                    ctx.lineTo(newx,newy);
+                    ctx.strokeStyle = linecolor;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+
+                    oldx = newx;
+                    oldy = newy;
+
+                    var point = {
+                        x : oldx,
+                        y : oldy,
+                        action : 'ACTION_MOVE'
+                    }
+                    points.push(point);
+                    print();
+                }
+            }
+
+
+            function clearCanvas()  
+            {  
+                ctx.clearRect(0,0,c.width,c.height);  
+                points = [];
+                print();
+            } 
+
+            function print(){
+                var html = '';
+                for(var point of points){
+                    html += point.action +','+point.x+','+point.y+'<br>'
+                }
+                $(".points").html(html);
+                
+            }
+
+            function sb(){
+
+                let data = checkRaw(points);
+                $(".big").text(data.letter)
+                $(".time").text(data.time+'ms')
+
+               
+            }
+        </script>
+    </body>
+</html>
+<style>
+.main{
+    position: relative;
+} 
+canvas{
+	border:1px solid #efefef;
+}
+
+.right{
+    position: absolute;
+    left:620px;
+    top:0;
+}
+.right .points{
+    width:200px;
+    height:200px;
+    overflow: auto;
+    font-size: 12px;
+    border:1px solid #efefef;
+}
+
+.right .btns{
+    margin-top:10px;
+}
+.big{
+    font-size: 64px;
+    width: 304px;
+    word-break: break-all;
+}
+    </style>

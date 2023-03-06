@@ -1,0 +1,11 @@
+server:
+  port: 8080
+  tomcat:
+    uri-encoding: UTF-8
+spring:
+  profiles:
+    active: dev
+  application:
+    name: service
+  jackson:
+    locale: zh_CN
